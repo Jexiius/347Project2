@@ -4,6 +4,7 @@
 
 import numpy as np
 import pandas as pd
+import tensorflow as tf
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import KFold, GridSearchCV, train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
@@ -44,12 +45,29 @@ def preprocess_cho(X, y, pca_variance = 0.95, test_size=0.2, random_state=42):
 
     return X_train, X_test, y_train, y_test
 
+def load_mnist():
+    DATA_URL = 'https://storage.googleapis.com/tensorflow/tf-keras-datasets/mnist.npz'
+    path = tf.keras.utils.get_file('mnist.npz', DATA_URL)
+    with np.load(path) as data:
+        train_examples = data['x_train']
+        train_labels = data['y_train']
+        test_examples = data['x_test']
+        test_labels = data['y_test']
 
+    # Flatten 28x28 images to 784-dimensional vectors
+    X_train = train_examples.reshape(train_examples.shape[0], -1)
+    X_test = test_examples.reshape(test_examples.shape[0], -1)
 
+    # Normalize pixel values to [0, 1]
+    X_train = X_train / 255.0
+    X_test = X_test / 255.0
 
-
-
+    return X_train, X_test, train_labels, test_labels
 
 if __name__ == "__main__":
     # Load Cho dataset
     gene_ids, y, X = load_cho("cho.txt")
+    X_train, X_test, y_train, y_test = preprocess_cho(X, y)
+
+    #Load MNIST dataset
+    X_train_mnist, X_test_mnist, y_train_mnist, y_test_mnist = load_mnist()
