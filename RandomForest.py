@@ -4,7 +4,6 @@
 
 import numpy as np
 import pandas as pd
-import tensorflow as tf
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import KFold, GridSearchCV, train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
@@ -46,9 +45,7 @@ def preprocess_cho(X, y, pca_variance = 0.95, test_size=0.2, random_state=42):
     return X_train, X_test, y_train, y_test
 
 def load_mnist():
-    DATA_URL = 'https://storage.googleapis.com/tensorflow/tf-keras-datasets/mnist.npz'
-    path = tf.keras.utils.get_file('mnist.npz', DATA_URL)
-    with np.load(path) as data:
+    with np.load("mnist.npz") as data:
         train_examples = data['x_train']
         train_labels = data['y_train']
         test_examples = data['x_test']
@@ -64,10 +61,25 @@ def load_mnist():
 
     return X_train, X_test, train_labels, test_labels
 
-if __name__ == "__main__":
-    # Load Cho dataset
-    gene_ids, y, X = load_cho("cho.txt")
-    X_train, X_test, y_train, y_test = preprocess_cho(X, y)
+def preprocess_mnist(X_train, X_test, y_train, n_components=100, random_state=42):
+    
+    #PCA for dimensionality reduction
+    pca = PCA(n_components=n_components, random_state=random_state)
+    X_train = pca.fit_transform(X_train)
+    X_test = pca.transform(X_test)
 
-    #Load MNIST dataset
+    # Carve out 10% Validation set from training data
+    X_tr, X_val, y_tr, y_val = train_test_split(X_train, y_train, test_size=0.1, random_state=random_state, stratify=y_train)
+
+    print(f"Train: {X_tr.shape[0]} | Val: {X_val.shape[0]} | Test: {X_test.shape[0]}")
+
+    return X_tr, X_val, X_test, y_tr, y_val
+
+if __name__ == "__main__":
+    # Load Cho dataset and preprocess it (scaling, PCA, train-test split)
+    gene_ids, y, X = load_cho("cho.txt")
+    X_train_cho, X_test_cho, y_train_cho, y_test_cho = preprocess_cho(X, y)
+
+    #Load MNIST dataset and preprocess it (PCA and train-val split)
     X_train_mnist, X_test_mnist, y_train_mnist, y_test_mnist = load_mnist()
+    X_tr_mnist, X_val_mnist, X_test_mnist, y_tr_mnist, y_val_mnist = preprocess_mnist(X_train_mnist, X_test_mnist, y_train_mnist)
