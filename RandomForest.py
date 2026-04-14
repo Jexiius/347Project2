@@ -124,6 +124,7 @@ def train_cho(X_train, X_test, y_train, y_test, t=3):
         # Train final model with best params and evaluate on the test set
         best_rf = grid_search.best_estimator_
         y_pred = best_rf.predict(X_test)
+        y_prob = best_rf.predict_proba(X_test)
         acc = accuracy_score(y_test, y_pred)
         accuracies.append(acc)
         print(f"Test accuracy: {acc:.4f}")
@@ -133,7 +134,7 @@ def train_cho(X_train, X_test, y_train, y_test, t=3):
     print(f"Average Test Accuracy over {t} trials: {mean_acc:.4f} ± {std_acc:.4f}")
     print(classification_report(y_test, y_pred))
 
-    return mean_acc, std_acc
+    return mean_acc, std_acc, best_rf, y_pred, y_prob
 
 
 def train_mnist(X_tr, X_val, X_test, y_tr, y_val, y_test):
@@ -155,9 +156,22 @@ def train_mnist(X_tr, X_val, X_test, y_tr, y_val, y_test):
 
     ps = PredefinedSplit(test_fold=split_index)
 
-    rf = RandomForestClassifier(random_state = 42, n_jobs=-1)
-    grid_search = GridSearchCV(rf, param_grid, cv=ps, scoring='accuracy', n_jobs=-1)
+    rf = RandomForestClassifier(random_state = 42, n_jobs=1)
+    grid_search = GridSearchCV(rf, param_grid, cv=ps, scoring='accuracy', n_jobs=-1, verbose=2)
     grid_search.fit(X_trainval, y_trainval)
+
+    print(f"Best params: {grid_search.best_params_}")
+    print(f"Best validation accuracy: {grid_search.best_score_:.4f}")
+
+    # Train final model with best params and evaluate on the test set
+    best_rf = grid_search.best_estimator_
+    y_pred = best_rf.predict(X_test)
+    y_prob = best_rf.predict_proba(X_test)
+    acc = accuracy_score(y_test, y_pred)
+    print(f"Test accuracy: {acc:.4f}")
+    print(classification_report(y_test, y_pred))
+
+    return best_rf, y_pred, y_prob
 
 if __name__ == "__main__":
     # Load Cho dataset and preprocess it (scaling, PCA, train-test split)
@@ -169,4 +183,7 @@ if __name__ == "__main__":
     X_tr_mnist, X_val_mnist, X_te_mnist, y_tr_mnist, y_val_mnist = preprocess_mnist(X_train_mnist, X_test_mnist, y_train_mnist)
 
     # Train Random Forest on Cho dataset
-    cho_mean_acc, cho_std_acc = train_cho(X_train_cho, X_test_cho, y_train_cho, y_test_cho)
+    cho_mean_acc, cho_std_acc, cho_best_rf, cho_y_pred, cho_y_prob = train_cho(X_train_cho, X_test_cho, y_train_cho, y_test_cho)
+
+    # Train Random Forest on MNIST dataset
+    mnist_best_rf, mnist_y_pred, mnist_y_prob = train_mnist(X_tr_mnist, X_val_mnist, X_te_mnist, y_tr_mnist, y_val_mnist, y_test_mnist)
