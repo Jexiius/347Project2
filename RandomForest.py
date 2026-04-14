@@ -6,9 +6,9 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import KFold, GridSearchCV, train_test_split, PredefinedSplit
-from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.preprocessing import LabelEncoder, StandardScaler, label_binarize
 from sklearn.decomposition import PCA
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import accuracy_score, classification_report, f1_score, roc_auc_score
 
 # Function to load the Cho dataset
 # PARAM filename: The path to the Cho dataset file
@@ -44,6 +44,7 @@ def preprocess_cho(X, y, pca_variance = 0.95, test_size=0.2, random_state=42):
     X_train = scaler.fit_transform(X_train)
     X_test = scaler.transform(X_test)
 
+    # PCA for dimensionality reduction
     pca = PCA(n_components=pca_variance, random_state=random_state)
     X_train = pca.fit_transform(X_train)
     X_test = pca.transform(X_test)
@@ -100,6 +101,7 @@ def preprocess_mnist(X_train, X_test, y_train, n_components=100, random_state=42
 # PARAM t: The number of trials to perform with different random seeds for reproducibility (default is 3)
 def train_cho(X_train, X_test, y_train, y_test, t=3):
 
+    # Params for Hyperparameter tuning
     param_grid = {
         'n_estimators': [100, 200],
         'max_depth': [None, 10, 20],
@@ -109,12 +111,13 @@ def train_cho(X_train, X_test, y_train, y_test, t=3):
 
     accuracies = []
 
+    # Repeating the training 3 times
     for i in range(t):
         print(f"Trial {i+1}/{t}")
         
+        # K fold cross validation for hyperparameter tuning
         kf = KFold(n_splits = 3, shuffle=True, random_state = i)
         rf = RandomForestClassifier(random_state=i)
-
         grid_search = GridSearchCV(rf, param_grid, cv=kf, scoring='accuracy', n_jobs=-1)
         grid_search.fit(X_train, y_train)
 
@@ -136,8 +139,16 @@ def train_cho(X_train, X_test, y_train, y_test, t=3):
 
     return mean_acc, std_acc, best_rf, y_pred, y_prob
 
-
+# Function to train the MNIST dataset using a Random Forest classifier with hyperparameter tuning
+# PARAM X_tr: The training feature matrix of the MNIST dataset
+# PARAM X_val: The validation feature matrix of the MNIST dataset
+# PARAM X_test: The testing feature matrix of the MNIST dataset
+# PARAM y_tr: The training label vector of the MNIST dataset
+# PARAM y_val: The validation label vector of the MNIST dataset
+# PARAM y_test: The testing label vector of the MNIST dataset
 def train_mnist(X_tr, X_val, X_test, y_tr, y_val, y_test):
+
+    # Params for Hyperparameter tuning
     param_grid = {
         'n_estimators': [100, 200],
         'max_depth': [None, 10, 20],
@@ -156,6 +167,7 @@ def train_mnist(X_tr, X_val, X_test, y_tr, y_val, y_test):
 
     ps = PredefinedSplit(test_fold=split_index)
 
+    # Building the Random Forest model
     rf = RandomForestClassifier(random_state = 42, n_jobs=1)
     grid_search = GridSearchCV(rf, param_grid, cv=ps, scoring='accuracy', n_jobs=-1, verbose=2)
     grid_search.fit(X_trainval, y_trainval)
@@ -173,7 +185,32 @@ def train_mnist(X_tr, X_val, X_test, y_tr, y_val, y_test):
 
     return best_rf, y_pred, y_prob
 
-#def evaluate_model(y_test, y_pred, y_prob, dataset_name):
+# Function to evaluate the model's performance on the test set using accuracy, F1 score, and AUC
+# PARAM y_test: The true labels of the test set
+# PARAM y_pred: The predicted labels of the test set
+# PARAM y_prob: The predicted probabilities of the test set
+# PARAM dataset_name: The name of the dataset being evaluated
+def evaluate_model(y_test, y_pred, y_prob, dataset_name):
+    classes = np.unique(y_test)
+
+    # Accuracy
+    acc = accuracy_score(y_test, y_pred)
+
+    # Weighted F1 score
+    f1 = f1_score(y_test, y_pred, average='weighted')
+
+    # AUC OVR using binarize labels
+    y_test_bin = label_binarize(y_test, classes=classes)
+    auc = roc_auc_score(y_test_bin, y_prob, average='weighted', multi_class = 'ovr')
+
+    print(f"\n--- {dataset_name} Evaluation ---")
+    print(f"Accuracy:  {acc:.4f}")
+    print(f"F1 Score:  {f1:.4f}")
+    print(f"AUC:       {auc:.4f}")
+    print(classification_report(y_test, y_pred))
+
+    return acc, f1, auc
+
 
 
 if __name__ == "__main__":
@@ -190,3 +227,10 @@ if __name__ == "__main__":
 
     # Train Random Forest on MNIST dataset
     mnist_best_rf, mnist_y_pred, mnist_y_prob = train_mnist(X_tr_mnist, X_val_mnist, X_te_mnist, y_tr_mnist, y_val_mnist, y_test_mnist)
+
+    # Evaluate Cho model
+    cho_acc, cho_f1, cho_auc = evaluate_model(y_test_cho, cho_y_pred, cho_y_prob, "Cho Dataset")
+
+    # Evaluate MNIST model
+    mnist_acc, mnist_f1, mnist_auc = evaluate_model(y_test_mnist, mnist_y_pred, mnist_y_prob, "MNIST Dataset")
+
