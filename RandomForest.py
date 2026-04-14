@@ -173,6 +173,9 @@ def train_mnist(X_tr, X_val, X_test, y_tr, y_val, y_test):
 
     return best_rf, y_pred, y_prob
 
+#def evaluate_model(y_test, y_pred, y_prob, dataset_name):
+
+
 if __name__ == "__main__":
     # Load Cho dataset and preprocess it (scaling, PCA, train-test split)
     gene_ids, y, X = load_cho("cho.txt")
