@@ -45,12 +45,12 @@ def preprocess_cho(X, y, pca_variance = 0.95, test_size=0.2, random_state=42):
     X_test = scaler.transform(X_test)
 
     # PCA for dimensionality reduction
-    pca = PCA(n_components=pca_variance, random_state=random_state)
-    X_train = pca.fit_transform(X_train)
-    X_test = pca.transform(X_test)
+    # pca = PCA(n_components=pca_variance, random_state=random_state)
+    # X_train = pca.fit_transform(X_train)
+    # X_test = pca.transform(X_test)
 
 
-    print(f"PCA kept {pca.n_components_} components ({pca_variance*100:.0f}% variance)")
+    # print(f"PCA kept {pca.n_components_} components ({pca_variance*100:.0f}% variance)")
     print(f"Train: {X_train.shape[0]} | Test: {X_test.shape[0]}")
 
     return X_train, X_test, y_train, y_test
