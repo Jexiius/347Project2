@@ -29,7 +29,7 @@ def load_cho(filename):
 
     return gene_ids, y, attributes
 
-# Function to preprocess the Cho dataset (scaling, PCA, train-test split)
+# Function to preprocess the Cho dataset (scaling, train-test split)
 # PARAM X: The feature matrix of the Cho dataset
 # PARAM y: The label vector of the Cho dataset
 # PARAM pca_variance: The percentage of variance to retain when performing PCA (default is 0.95)
@@ -43,15 +43,7 @@ def preprocess_cho(X, y, pca_variance = 0.95, test_size=0.2, random_state=42):
     scaler = StandardScaler()
     X_train = scaler.fit_transform(X_train)
     X_test = scaler.transform(X_test)
-
-    # PCA for dimensionality reduction
-    # pca = PCA(n_components=pca_variance, random_state=random_state)
-    # X_train = pca.fit_transform(X_train)
-    # X_test = pca.transform(X_test)
-
-
-    # print(f"PCA kept {pca.n_components_} components ({pca_variance*100:.0f}% variance)")
-    print(f"Train: {X_train.shape[0]} | Test: {X_test.shape[0]}")
+    print(f" Cho Train: {X_train.shape[0]} | Test: {X_test.shape[0]}")
 
     return X_train, X_test, y_train, y_test
 
@@ -89,7 +81,7 @@ def preprocess_mnist(X_train, X_test, y_train, n_components=100, random_state=42
     # Carve out 10% Validation set from training data
     X_tr, X_val, y_tr, y_val = train_test_split(X_train, y_train, test_size=0.1, random_state=random_state, stratify=y_train)
 
-    print(f"Train: {X_tr.shape[0]} | Val: {X_val.shape[0]} | Test: {X_test.shape[0]}")
+    print(f" MNIST Train: {X_tr.shape[0]} | Val: {X_val.shape[0]} | Test: {X_test.shape[0]}")
 
     return X_tr, X_val, X_test, y_tr, y_val
 
@@ -103,9 +95,10 @@ def train_cho(X_train, X_test, y_train, y_test, t=3):
 
     # Params for Hyperparameter tuning
     param_grid = {
-        'n_estimators': [100, 200],
-        'max_depth': [None, 10, 20],
-        'min_samples_split': [2, 5],
+        'n_estimators': [50, 100, 200, 300],
+        'max_depth': [None, 5, 10, 20, 30],
+        'min_samples_split': [2, 5, 10],
+        'min_samples_leaf': [1, 2, 4],
         'max_features': ['sqrt', 'log2']
     }
 
@@ -151,9 +144,10 @@ def train_mnist(X_tr, X_val, X_test, y_tr, y_val, y_test):
     # Params for Hyperparameter tuning
     param_grid = {
         'n_estimators': [100, 200],
-        'max_depth': [None, 10, 20],
-        'min_samples_split': [2, 5],
-        'max_features': ['sqrt', 'log2']
+        'max_depth': [None, 10],
+        'max_features': ['sqrt'],
+        'min_samples_split': [2],
+        'min_samples_leaf': [1]
     }
 
 
