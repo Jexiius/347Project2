@@ -222,6 +222,14 @@ if __name__ == "__main__":
     # Train Random Forest on MNIST dataset
     mnist_best_rf, mnist_y_pred, mnist_y_prob = train_mnist(X_tr_mnist, X_val_mnist, X_te_mnist, y_tr_mnist, y_val_mnist, y_test_mnist)
 
+    # Get misclassified indices for MNIST
+    misclassified_idx = np.where(mnist_y_pred != y_test_mnist)[0]
+    print(f"Misclassified: {len(misclassified_idx)} / {len(y_test_mnist)}")
+
+    # See true vs predicted labels
+    for idx in misclassified_idx[:10]:
+        print(f"Index {idx}: True={y_test_mnist[idx]}, Pred={mnist_y_pred[idx]}")
+
     # Evaluate Cho model
     cho_acc, cho_f1, cho_auc = evaluate_model(y_test_cho, cho_y_pred, cho_y_prob, "Cho Dataset")
 
