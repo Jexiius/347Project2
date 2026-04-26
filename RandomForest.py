@@ -224,25 +224,6 @@ if __name__ == "__main__":
     # Train Random Forest on MNIST dataset
     mnist_best_rf, mnist_y_pred, mnist_y_prob = train_mnist(X_tr_mnist, X_val_mnist, X_te_mnist, y_tr_mnist, y_val_mnist, y_test_mnist)
 
-    # Get misclassified indices for MNIST
-    misclassified_idx = np.where(mnist_y_pred != y_test_mnist)[0]
-    print(f"Misclassified: {len(misclassified_idx)} / {len(y_test_mnist)}")
-
-    n_show = 20
-    fig, axes = plt.subplots(4, 5, figsize=(12, 10))
-    fig.suptitle("Misclassified MNIST Images", fontsize=16)
-
-    for i, idx in enumerate(misclassified_idx[:n_show]):
-        ax = axes[i // 5, i % 5]
-        # X_test_mnist is PCA-reduced, so we need the original test images
-        ax.imshow(X_test_mnist_raw[idx].reshape(28, 28), cmap='gray')
-        ax.set_title(f"True: {y_test_mnist[idx]}\nPred: {mnist_y_pred[idx]}", fontsize=9)
-        ax.axis('off')
-
-    plt.tight_layout()
-    plt.savefig("misclassified_mnist.png", dpi=150)
-    plt.show()
-
     # Evaluate Cho model
     cho_acc, cho_f1, cho_auc = evaluate_model(y_test_cho, cho_y_pred, cho_y_prob, "Cho Dataset")
 
