@@ -3,6 +3,7 @@
 # Connor McDowell, Jake Carlin, Will Hoog
 
 import numpy as np
+import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import KFold, GridSearchCV, train_test_split, PredefinedSplit
@@ -214,6 +215,7 @@ if __name__ == "__main__":
 
     #Load MNIST dataset and preprocess it (PCA and train-val split)
     X_train_mnist, X_test_mnist, y_train_mnist, y_test_mnist = load_mnist()
+    X_test_mnist_raw = X_test_mnist.copy()  # Save original before PCA
     X_tr_mnist, X_val_mnist, X_te_mnist, y_tr_mnist, y_val_mnist = preprocess_mnist(X_train_mnist, X_test_mnist, y_train_mnist)
 
     # Train Random Forest on Cho dataset
@@ -226,9 +228,20 @@ if __name__ == "__main__":
     misclassified_idx = np.where(mnist_y_pred != y_test_mnist)[0]
     print(f"Misclassified: {len(misclassified_idx)} / {len(y_test_mnist)}")
 
-    # See true vs predicted labels
-    for idx in misclassified_idx[:10]:
-        print(f"Index {idx}: True={y_test_mnist[idx]}, Pred={mnist_y_pred[idx]}")
+    n_show = 20
+    fig, axes = plt.subplots(4, 5, figsize=(12, 10))
+    fig.suptitle("Misclassified MNIST Images", fontsize=16)
+
+    for i, idx in enumerate(misclassified_idx[:n_show]):
+        ax = axes[i // 5, i % 5]
+        # X_test_mnist is PCA-reduced, so we need the original test images
+        ax.imshow(X_test_mnist_raw[idx].reshape(28, 28), cmap='gray')
+        ax.set_title(f"True: {y_test_mnist[idx]}\nPred: {mnist_y_pred[idx]}", fontsize=9)
+        ax.axis('off')
+
+    plt.tight_layout()
+    plt.savefig("misclassified_mnist.png", dpi=150)
+    plt.show()
 
     # Evaluate Cho model
     cho_acc, cho_f1, cho_auc = evaluate_model(y_test_cho, cho_y_pred, cho_y_prob, "Cho Dataset")
