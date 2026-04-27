@@ -2,6 +2,7 @@
 # Project 2: CNN Implementation on Cho and MNIST Datasets
 # Connor McDowell, Jake Carlin, Will Hoog
 
+import os
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -47,7 +48,7 @@ def preprocess_cho(X, y, test_size=0.2, random_state=42):
 
 # Function to load the MNIST dataset
 def load_mnist():
-    with np.load("mnist.npz") as data:
+    with np.load("../mnist.npz") as data:
         train_images = data['x_train']
         train_labels = data['y_train']
         test_images = data['x_test']
@@ -186,6 +187,7 @@ def train_mnist(X_tr, X_val, X_te, y_tr, y_val, y_test):
         {'filters': 64, 'dense_units': 64},
         {'filters': 32, 'dense_units': 128},
         {'filters': 64, 'dense_units': 128},
+        {'filters': 128, 'dense_units': 128}
     ]
 
     best_params = None
@@ -247,19 +249,41 @@ def evaluate_model(y_test, y_pred, y_prob, dataset_name):
 
 
 if __name__ == "__main__":
+    CHO_MODEL_PATH = "cho_cnn_model.keras"
+    MNIST_MODEL_PATH = "mnist_cnn_model.keras"
+
     # Load Cho dataset and preprocess it (scaling and train-test split)
-    gene_ids, y, X = load_cho("cho.txt")
+    gene_ids, y, X = load_cho("../cho.txt")
     X_train_cho, X_test_cho, y_train_cho, y_test_cho = preprocess_cho(X, y)
 
     # Load MNIST dataset and preprocess it (train-val split)
     X_train_mnist, X_test_mnist, y_train_mnist, y_test_mnist = load_mnist()
     X_tr_mnist, X_val_mnist, X_te_mnist, y_tr_mnist, y_val_mnist = preprocess_mnist(X_train_mnist, X_test_mnist, y_train_mnist)
 
-    # Train CNN on Cho dataset
-    cho_mean_acc, cho_std_acc, cho_best_model, cho_y_pred, cho_y_prob = train_cho(X_train_cho, X_test_cho, y_train_cho, y_test_cho)
+    # Train or load CNN on Cho dataset
+    if os.path.exists(CHO_MODEL_PATH):
+        print(f"Loading saved Cho model from {CHO_MODEL_PATH}...")
+        cho_best_model = tf.keras.models.load_model(CHO_MODEL_PATH)
+        X_test_cho_3d = X_test_cho[..., np.newaxis]
+        cho_y_prob = cho_best_model.predict(X_test_cho_3d)
+        cho_y_pred = np.argmax(cho_y_prob, axis=1)
+        cho_mean_acc = accuracy_score(y_test_cho, cho_y_pred)
+        cho_std_acc = 0.0
+    else:
+        cho_mean_acc, cho_std_acc, cho_best_model, cho_y_pred, cho_y_prob = train_cho(X_train_cho, X_test_cho, y_train_cho, y_test_cho)
+        cho_best_model.save(CHO_MODEL_PATH)
+        print(f"Cho model saved to {CHO_MODEL_PATH}")
 
-    # Train CNN on MNIST dataset
-    mnist_best_model, mnist_y_pred, mnist_y_prob = train_mnist(X_tr_mnist, X_val_mnist, X_te_mnist, y_tr_mnist, y_val_mnist, y_test_mnist)
+    # Train or load CNN on MNIST dataset
+    if os.path.exists(MNIST_MODEL_PATH):
+        print(f"Loading saved MNIST model from {MNIST_MODEL_PATH}...")
+        mnist_best_model = tf.keras.models.load_model(MNIST_MODEL_PATH)
+        mnist_y_prob = mnist_best_model.predict(X_te_mnist)
+        mnist_y_pred = np.argmax(mnist_y_prob, axis=1)
+    else:
+        mnist_best_model, mnist_y_pred, mnist_y_prob = train_mnist(X_tr_mnist, X_val_mnist, X_te_mnist, y_tr_mnist, y_val_mnist, y_test_mnist)
+        mnist_best_model.save(MNIST_MODEL_PATH)
+        print(f"MNIST model saved to {MNIST_MODEL_PATH}")
 
     # Evaluate Cho model
     cho_acc, cho_f1, cho_auc = evaluate_model(y_test_cho, cho_y_pred, cho_y_prob, "Cho Dataset")
